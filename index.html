@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat BETson (Proxy Netlify)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white h-screen flex flex-col">
+
+  <div class="flex-1 flex flex-col justify-end p-4">
+    <div id="chatWindow" class="space-y-2 overflow-y-auto mb-4"></div>
+
+    <div class="flex">
+      <input id="userInput" type="text" placeholder="Pergunte algo ao BETson..." class="flex-1 p-2 rounded-l-xl text-black">
+      <button onclick="sendMessage()" class="bg-green-600 px-4 py-2 rounded-r-xl">Enviar</button>
+    </div>
+  </div>
+
+<script>
+const chatWindow = document.getElementById('chatWindow');
+const userInput = document.getElementById('userInput');
+
+// Mensagem inicial
+window.onload = () => {
+  addMessage('BETson', 'Olá! Sou o BETson. Pergunte sobre jogos, palpites ou tendências do futebol e eu te respondo em tempo real!');
+}
+
+function addMessage(sender, text) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('flex', sender === 'BETson' ? 'justify-start' : 'justify-end');
+
+  const messageDiv = document.createElement('div');
+  messageDiv.classList.add('p-2', 'rounded', 'max-w-xs', 'text-white');
+  messageDiv.classList.add(sender === 'BETson' ? 'bg-green-700' : 'bg-gray-700');
+
+  messageDiv.innerText = `${sender}: ${text}`;
+  wrapper.appendChild(messageDiv);
+  chatWindow.appendChild(wrapper);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+async function sendMessage() {
+  const question = userInput.value.trim();
+  if (!question) return;
+
+  addMessage('Você', question);
+  userInput.value = '';
+
+  addMessage('BETson', 'Analisando sua pergunta...');
+
+  try {
+    const response = await fetch("/.netlify/functions/betson-proxy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pergunta: question })
+    });
+
+    const data = await response.json();
+    const respostaBetson = data.resposta || "Desculpe, não consegui entender a pergunta.";
+
+    chatWindow.removeChild(chatWindow.lastChild);
+    addMessage('BETson', respostaBetson);
+
+  } catch (error) {
+    chatWindow.removeChild(chatWindow.lastChild);
+    addMessage('BETson', 'Erro ao processar a pergunta. Tente novamente mais tarde.');
+  }
+}
+</script>
+
+</body>
+</html>
